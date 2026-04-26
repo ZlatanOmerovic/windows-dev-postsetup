@@ -40,7 +40,47 @@ $ProgressPreference    = 'SilentlyContinue'
 if (-not $PSScriptRoot) {
     Write-Host "Detected one-liner invocation (irm | iex)." -ForegroundColor Cyan
 
-    # If git isn't installed yet (truly fresh Win11), install it via winget so we can clone.
+    # ----------------------------------------------------------------------
+    # Inline preflight — fail fast BEFORE we waste bandwidth on git + clone.
+    # Mirrors tasks/00-preflight.ps1 (which still runs after clone for users
+    # invoking from a local clone). Duplicated intentionally — _helpers.ps1
+    # isn't available yet at this point.
+    # ----------------------------------------------------------------------
+    Write-Host "  Preflight checks..." -ForegroundColor Cyan
+
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+        [Security.Principal.WindowsBuiltInRole]::Administrator)
+    if (-not $isAdmin) {
+        throw "Bootstrap must run as Administrator. Right-click PowerShell -> 'Run as administrator', then re-run the one-liner."
+    }
+    Write-Host "    OK   running elevated" -ForegroundColor Green
+
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        throw "winget not found. Update Windows 11 via Windows Update; winget ships with Win11 22H2+."
+    }
+    Write-Host "    OK   winget present" -ForegroundColor Green
+
+    $wslOk = $false
+    try {
+        $distros = wsl -l -q 2>&1 | Where-Object { $_ -and $_.Trim() -ne '' } |
+                   ForEach-Object { ($_ -replace '\x00','').Trim() }
+        if ($distros -contains 'Debian') { $wslOk = $true }
+    } catch { }
+    if (-not $wslOk) {
+        Write-Host ""
+        Write-Host "    WSL2 + Debian not detected. Do this first, then re-run the one-liner:" -ForegroundColor Red
+        Write-Host "      1. wsl --install -d Debian   (in this same admin PowerShell)" -ForegroundColor Yellow
+        Write-Host "      2. Reboot." -ForegroundColor Yellow
+        Write-Host "      3. Launch Debian once from the Start menu and create your sudoer user." -ForegroundColor Yellow
+        Write-Host "      4. Re-run the irm | iex one-liner." -ForegroundColor Yellow
+        Write-Host ""
+        throw "WSL2 + Debian missing."
+    }
+    Write-Host "    OK   WSL2 Debian detected" -ForegroundColor Green
+
+    # ----------------------------------------------------------------------
+    # Now safe to install git (if missing) and clone.
+    # ----------------------------------------------------------------------
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
         Write-Host "  Git not found — installing Git for Windows via winget (one-time)..." -ForegroundColor Yellow
         winget install -e --id Git.Git `
@@ -48,7 +88,6 @@ if (-not $PSScriptRoot) {
             --accept-package-agreements `
             --silent `
             --disable-interactivity
-        # Refresh PATH so 'git' is callable in this same shell
         $env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" +
                     [Environment]::GetEnvironmentVariable("Path","User")
         if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
@@ -65,6 +104,10 @@ if (-not $PSScriptRoot) {
         & "$temp\bootstrap.ps1" @PSBoundParameters
     } finally {
         Pop-Location
+        # Clean up the cloned tempdir so we don't leave artifacts behind.
+        if (Test-Path $temp) {
+            Remove-Item -Recurse -Force $temp -ErrorAction SilentlyContinue
+        }
     }
     return
 }

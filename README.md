@@ -1,6 +1,6 @@
 # windows-dev-postsetup
 
-> Hit-and-run PowerShell bootstrap for a fresh Windows 11 dev machine — full cross-shell prompt parity, WSL2 Debian integration, and ~50 dev/utility packages installed in one command.
+> Hit-and-run PowerShell bootstrap for a fresh Windows 11 dev machine — full cross-shell prompt parity, WSL2 Debian integration, and 46 winget + 1 Chocolatey + 10 apt packages installed in one command.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078d6.svg)](https://www.microsoft.com/windows/windows-11)
@@ -13,7 +13,7 @@ Personal setup of [@ZlatanOmerovic](https://github.com/ZlatanOmerovic). **Hardco
 
 ## ⚡ Hit-and-run
 
-Open **PowerShell as Administrator** on a fresh Windows 11 box and run:
+> ⚠️ **Run from elevated PowerShell only.** Right-click PowerShell -> "Run as administrator". The bootstrap fails fast at preflight if not elevated.
 
 ```powershell
 irm https://raw.githubusercontent.com/ZlatanOmerovic/windows-dev-postsetup/master/bootstrap.ps1 | iex
@@ -21,11 +21,12 @@ irm https://raw.githubusercontent.com/ZlatanOmerovic/windows-dev-postsetup/maste
 
 That's the whole thing. The bootstrap will:
 
-1. Verify it's running elevated and that `winget` exists.
-2. Auto-install `git` via winget if not present (so the irm-iex one-liner works on a truly vanilla machine).
-3. Clone the repo to a tempdir and run all `tasks/NN-*.ps1` in order with progress reporting.
-4. Verify WSL2 + Debian are installed (or print a clear "do these first" message and exit).
-5. Generate `MANUAL_STEPS_GENERATED.md` in your home dir + open it in Notepad at the end.
+1. **Inline preflight** — verify it's running elevated, that `winget` exists, and that **WSL2 + Debian are installed**. Bails out with clear instructions if any of these are missing (no wasted bandwidth).
+2. **Auto-install `git`** via winget if not present (so the one-liner works on a truly vanilla machine).
+3. **Clone the repo** to a tempdir.
+4. **Run all `tasks/NN-*.ps1`** in numeric order with progress reporting (`tasks/00-preflight.ps1` re-runs the preflight checks for users invoking from a local clone — harmless re-verification).
+5. **Generate `MANUAL_STEPS_GENERATED.md`** in your home dir and open it in Notepad at the end.
+6. **Clean up the cloned tempdir.**
 
 ---
 
@@ -34,8 +35,8 @@ That's the whole thing. The bootstrap will:
 | Feature | Details |
 |---|---|
 | **5-shell prompt parity** | Same Starship `tokyo-night` prompt with per-shell `[ LABEL ]` chip in WSL Debian zsh, PowerShell 5.1, PowerShell 7, Git Bash, CMD (via Clink) |
-| **Per-shell terminal background** | OSC 11 from each shell rc — works in **both** Windows Terminal and WezTerm with a single config (Git Bash → dark green, Debian → dark red, PS 5.1 → royal blue, PS 7 → darker navy, CMD → charcoal) |
-| **WSL2 Debian** | zsh + Starship + 5 modern CLI tools, default shell switched, plugins cloned, SSH keys copied with proper Linux perms |
+| **Per-shell terminal background** | Each shell rc emits an OSC 11 escape sequence — both WezTerm and Windows Terminal honor it, so backgrounds set themselves on shell startup. WT *also* gets per-profile `background` in `settings.json` for instant-on color before the rc fires. (Git Bash → dark green, Debian → dark red, PS 5.1 → royal blue, PS 7 → darker navy, CMD → charcoal) |
+| **WSL2 Debian** | zsh + Starship + modern CLI toolkit (`fzf`, `bat`, `eza`, `zoxide`, `ripgrep`) + `wget` + `fastfetch` + `ffmpeg`, default shell switched to zsh, plugins cloned, SSH keys copied with proper Linux perms |
 | **SSH on Windows** | Built-in `ssh-agent` service enabled + auto-start, ACLs locked on private keys, keys loaded into agent, `git` pointed at Windows OpenSSH |
 | **Modern CLI symmetry** | `bat`, `eza`, `jq`, `wget`, `fastfetch` — same UX in all 5 shells |
 | **Git enhancements** | `delta` wired as global pager + diff filter |
@@ -56,6 +57,7 @@ That's the whole thing. The bootstrap will:
 | `CoreyButler.NVMforWindows` | nvm-windows; bootstrap then runs `nvm install lts` |
 | `Rustlang.Rustup` | Rust toolchain manager; bootstrap adds `rust-analyzer clippy rustfmt` |
 | `php` *(via Chocolatey)* | PHP latest |
+| Avalonia .NET templates *(via `dotnet new install`)* | `Avalonia.Templates` — Cross-platform XAML UI framework. Installed by `tasks/06-avalonia.ps1` after the .NET SDKs are in. |
 
 ### Editors & IDEs
 
@@ -65,7 +67,6 @@ That's the whole thing. The bootstrap will:
 | `JetBrains.Toolbox` | Manages Rider, DataGrip, etc. (sign in manually post-install) |
 | `SublimeHQ.SublimeText.4` | Sublime Text 4 + opinionated `Preferences.sublime-settings` |
 | `Microsoft.VisualStudioCode` | VS Code |
-| `Microsoft.PowerShell` | PowerShell 7 |
 
 ### Dev tools
 
@@ -86,14 +87,15 @@ That's the whole thing. The bootstrap will:
 | `WinSCP.WinSCP` | SFTP client |
 | `PuTTY.PuTTY` | Full PuTTY suite |
 
-### Terminal stack
+### Shells & terminal stack
 
 | Package | What |
 |---|---|
-| `wez.wezterm` | GPU-accelerated terminal, Lua config |
+| `Microsoft.PowerShell` | PowerShell 7 (the modern cross-platform PowerShell; PS 5.1 ships with Windows) |
+| `wez.wezterm` | WezTerm — GPU-accelerated terminal, Lua config |
 | `Starship.Starship` | Cross-shell prompt — used in all 5 shells |
 | `DEVCOM.JetBrainsMonoNerdFont` | Font for terminal + Sublime + IDEs |
-| `chrisant996.Clink` | CMD readline + Lua scripting (loads `starship.lua`) |
+| `chrisant996.Clink` | CMD readline + Lua scripting (loads `starship.lua` for the CMD prompt) |
 
 ### Browsers
 
@@ -207,14 +209,19 @@ cd windows-dev-postsetup
 .\bootstrap.ps1 -Only 02,03          # winget batch + PHP
 ```
 
+> ⚠️ **Use the leading zero.** Task file prefixes are zero-padded (`02`, not `2`). `-Skip 2,8` would silently skip nothing because `"02" -ne "2"`.
+
 ### Unattended WSL setup
 
-The WSL phase needs your Debian sudo password. By default it prompts. To skip the prompt (e.g. for fully-unattended runs):
+The WSL phase needs your Debian sudo password. By default it prompts. To skip the prompt (e.g. for fully-unattended runs), use a `try`/`finally` block so the env var is wiped even if the script fails mid-way:
 
 ```powershell
-$env:WSL_SUDO_PASS = "your-sudo-password"
-.\bootstrap.ps1
-Remove-Item Env:\WSL_SUDO_PASS    # clean up
+try {
+    $env:WSL_SUDO_PASS = "your-sudo-password"
+    .\bootstrap.ps1
+} finally {
+    Remove-Item Env:\WSL_SUDO_PASS -ErrorAction SilentlyContinue
+}
 ```
 
 The password is only used in-memory for the apt commands and never written to disk.
@@ -292,7 +299,20 @@ The build hit ~14 surprises along the way — see [LESSONS.md](LESSONS.md) for t
 
 ## 📝 License
 
-MIT. Fork freely. If you fork and customize, change `ZlatanOmerovic` references in `configs/` and `tasks/07-ssh-agent.ps1` to your own.
+MIT. Fork freely.
+
+If you fork and customize, the hardcoded references you'll need to change to your own are:
+
+| File | What to change |
+|---|---|
+| `bootstrap.ps1` | The two GitHub URLs in the `.EXAMPLE` block and in the `git clone` line of the `irm \| iex` path |
+| `tasks/08-wsl-debian.ps1` | The heredoc that writes `~/.ssh/config` inside WSL — change the `Host github.com`/`Host ssh.dev.azure.com` blocks and the `IdentityFile ~/.ssh/<keyname>` lines to match the SSH key filenames you use |
+| `tasks/99-finalize.ps1` | Repo URL in the generated header |
+| `configs/windows-terminal/settings.json` | The `defaultProfile` GUID points at Git Bash on this machine — yours may differ; WT auto-regenerates dynamic-source GUIDs deterministically so it should match, but verify |
+| `MANUAL_STEPS.md` | NCrunch / JB Toolbox / etc. references are user-agnostic — leave those alone unless your post-install workflow differs |
+| `packages.txt` | Prune to your own taste |
+
+`tasks/07-ssh-agent.ps1` does NOT need changes — it dynamically discovers private keys in `~/.ssh/` and uses `$env:USERNAME` for ACL grants.
 
 ---
 
