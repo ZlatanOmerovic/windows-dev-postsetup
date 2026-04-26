@@ -318,6 +318,6 @@ If you fork and customize, the hardcoded references you'll need to change to you
 
 ## 🌱 Origin
 
-Built in one extended Claude Code session on **2026-04-26** while doing the actual fresh-install setup. Nothing in this repo is theoretical — every config, every task, every gotcha in [LESSONS.md](LESSONS.md) was hit and fixed live. The repo is the codified output.
+Built in one extended [Claude Code](https://claude.ai/code) session on **2026-04-26** (Opus 4.7, 1M context) while doing the actual fresh-install setup. Nothing in this repo is theoretical — every config, every task, every gotcha in [LESSONS.md](LESSONS.md) was hit and fixed live. The repo is the codified output.
 
-The unique value isn't the package list (everyone has dotfiles repos). It's the **5-shell symmetric prompt** with per-shell terminal background colors driven by **OSC 11 from the shell rc** (works in both Windows Terminal and WezTerm with one config), and the **WSL ↔ Windows integration story** captured end-to-end with the gotchas surfaced.
+The unique value isn't the package list (everyone has dotfiles repos). It's the **5-shell symmetric prompt** with per-shell terminal backgrounds driven by **OSC 11 from the shell rc** (one mechanism, both Windows Terminal and WezTerm honor it), and the **WSL ↔ Windows integration story** captured end-to-end with the gotchas surfaced in [LESSONS.md](LESSONS.md).
