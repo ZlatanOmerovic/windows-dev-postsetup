@@ -38,7 +38,26 @@ $ProgressPreference    = 'SilentlyContinue'
 # When invoked via `irm | iex`, $PSScriptRoot is empty. In that case we
 # clone the repo to a tempdir and re-invoke ourselves from there.
 if (-not $PSScriptRoot) {
-    Write-Host "Detected one-liner invocation (irm | iex). Cloning repo to a temp dir..." -ForegroundColor Cyan
+    Write-Host "Detected one-liner invocation (irm | iex)." -ForegroundColor Cyan
+
+    # If git isn't installed yet (truly fresh Win11), install it via winget so we can clone.
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+        Write-Host "  Git not found — installing Git for Windows via winget (one-time)..." -ForegroundColor Yellow
+        winget install -e --id Git.Git `
+            --accept-source-agreements `
+            --accept-package-agreements `
+            --silent `
+            --disable-interactivity
+        # Refresh PATH so 'git' is callable in this same shell
+        $env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" +
+                    [Environment]::GetEnvironmentVariable("Path","User")
+        if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+            throw "Git install completed but 'git' is still not on PATH. Open a new admin PowerShell and re-run the one-liner."
+        }
+        Write-Host "  Git installed and on PATH ($(git --version))" -ForegroundColor Green
+    }
+
+    Write-Host "  Cloning repo to a temp dir..." -ForegroundColor Cyan
     $temp = Join-Path $env:TEMP "windows-dev-postsetup-$(Get-Random)"
     git clone --depth 1 https://github.com/ZlatanOmerovic/windows-dev-postsetup.git $temp
     Push-Location $temp

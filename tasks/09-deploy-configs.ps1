@@ -4,8 +4,9 @@ $repoRoot = Get-RepoRoot
 $src      = Join-Path $repoRoot 'configs\windows'
 
 # (source-relative-to-configs/windows) -> (target absolute path)
+# Shell rc/profile-style configs only. Terminal-emulator configs are deployed
+# by their own tasks (10-windows-terminal, 11-wezterm).
 $mappings = @(
-    @{Src='.wezterm.lua';                                                          Dst="$env:USERPROFILE\.wezterm.lua"},
     @{Src='.config\starship.toml';                                                 Dst="$env:USERPROFILE\.config\starship.toml"},
     @{Src='.bashrc';                                                               Dst="$env:USERPROFILE\.bashrc"},
     @{Src='.bash_profile';                                                         Dst="$env:USERPROFILE\.bash_profile"},
