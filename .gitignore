@@ -1,0 +1,32 @@
+# Local-only files / runtime artifacts
+*.log
+*.tmp
+*.local
+.env
+.env.*
+!.env.example
+
+# Generated at runtime by 99-finalize.ps1 — never committed
+MANUAL_STEPS_GENERATED.md
+
+# Editor cruft
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# SSH keys / secrets — should NEVER be in the repo
+**/id_rsa*
+**/id_ed25519*
+**/id_ecdsa*
+**/*.pem
+**/*.key
+**/*.ppk
+**/known_hosts
+**/.ssh/
+
+# PowerShell module cache (in case anyone clones inside a profile dir)
+*.psd1.bak
+PowerShellGet/

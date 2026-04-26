@@ -1,0 +1,31 @@
+{
+    "font_face": "JetBrainsMono Nerd Font",
+    "font_size": 11,
+    "font_options": ["subpixel_antialias"],
+    "line_padding_top": 2,
+    "line_padding_bottom": 2,
+
+    "theme": "auto",
+    "color_scheme": "auto",
+    "dark_theme": "Default Dark.sublime-theme",
+    "dark_color_scheme": "Mariana.sublime-color-scheme",
+    "light_theme": "Default.sublime-theme",
+    "light_color_scheme": "Breakers.sublime-color-scheme",
+
+    "translate_tabs_to_spaces": true,
+    "tab_size": 4,
+    "detect_indentation": true,
+    "trim_trailing_white_space_on_save": "all",
+    "ensure_newline_at_eof_on_save": true,
+
+    "highlight_line": true,
+    "draw_white_space": ["selection", "trailing"],
+    "rulers": [80, 120],
+    "word_wrap": false,
+
+    "hot_exit": true,
+    "remember_open_files": true,
+    "auto_complete_commit_on_tab": true,
+
+    "ignored_packages": ["Vintage"]
+}
